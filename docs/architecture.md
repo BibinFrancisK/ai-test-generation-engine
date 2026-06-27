@@ -27,14 +27,14 @@ sequenceDiagram
     WC->>WC: verify HMAC-SHA256 signature<br/>(401 if invalid)
     WC->>WH: route event payload
     WH->>DA: parse unified diff + extract changed methods
-    DA->>CA: List&lt;ChangedMethod&gt; + file path + ref
+    DA->>CA: changedMethods + filePath + ref
     note over CA: Two-tier context assembly (ADR-007)
     CA->>GCF: fetch full source of changed class (Tier 1)
-    GCF-->>CA: String sourceCode
+    GCF-->>CA: sourceCode
     CA->>GCF: find existing test file (Tier 1)
-    GCF-->>CA: Optional&lt;String&gt; existingTestSource
+    GCF-->>CA: existingTestSource (Optional)
     CA->>GCF: fetch up to 3 dependency sources (Tier 1)
-    GCF-->>CA: List&lt;String&gt; dependencySources
+    GCF-->>CA: dependencySources
     CA->>PCR: load ProjectConventions by repositoryId (Tier 2)
     alt conventions absent or stale (> 7 days)
         PCR-->>CA: empty
