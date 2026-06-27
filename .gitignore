@@ -43,3 +43,6 @@ replay_pid*
 tmp/
 generated-tests/
 smee-url.txt
+
+# Planning docs — local only, not tracked in git
+plan/
