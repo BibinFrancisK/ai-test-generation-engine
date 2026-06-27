@@ -137,5 +137,3 @@ docker compose up -d
 | [ADR-003](docs/adr/ADR-003-test-storage.md) | DynamoDB for metadata, S3 for test artifacts |
 | [ADR-004](docs/adr/ADR-004-local-aws.md) | LocalStack for all local AWS iteration |
 | [ADR-005](docs/adr/ADR-005-source-analysis.md) | JavaParser for source and convention analysis |
-| [ADR-006](docs/adr/ADR-006-delivery.md) | PR-based delivery (branch + PR + comment) |
-| [ADR-007](docs/adr/ADR-007-context-assembly.md) | Two-tier LLM context (GitHub Contents API + DynamoDB conventions) |
