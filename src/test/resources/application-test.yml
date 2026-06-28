@@ -1,0 +1,4 @@
+# Enforces zero real LLM calls during ./mvnw verify — see .claude/rules/testing.md
+testgen:
+  llm:
+    provider: noop
