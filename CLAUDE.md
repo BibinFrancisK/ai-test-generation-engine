@@ -27,7 +27,7 @@ docker compose --profile full up -d
 cd infra/terraform && terraform apply
 ```
 
-> `pom.xml`, `docker-compose.yml`, and CI workflow are scaffolded on Day 2. Until then these commands will not work.
+> `docker-compose.yml` is added on Day 9 (LocalStack setup). The `docker compose` and `terraform` commands above will not work until then.
 
 ## Architecture
 
