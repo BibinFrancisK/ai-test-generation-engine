@@ -26,4 +26,9 @@ public final class Constants {
     // ProjectConventions record defaults
     public static final String SCHEMA_VERSION_V1 = "v1";
     public static final String TEST_PACKAGE_PATTERN_MIRRORS_SOURCE = "mirrors-source";
+
+    // DiffParser — unified diff markers and hunk header regex
+    public static final String DIFF_HUNK_HEADER_REGEX = "^@@ -\\d+(?:,\\d+)? \\+(\\d+)(?:,(\\d+))? @@";
+    public static final String DIFF_NEW_FILE_MARKER = "+++ /dev/null";
+    public static final String DIFF_OLD_FILE_MARKER = "--- /dev/null";
 }
