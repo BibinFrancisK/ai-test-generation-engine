@@ -31,4 +31,11 @@ public final class Constants {
     public static final String DIFF_HUNK_HEADER_REGEX = "^@@ -\\d+(?:,\\d+)? \\+(\\d+)(?:,(\\d+))? @@";
     public static final String DIFF_NEW_FILE_MARKER = "+++ /dev/null";
     public static final String DIFF_OLD_FILE_MARKER = "--- /dev/null";
+
+    public static final int HARD_MAX_TOKENS = 1500;
+
+    // LLM provider identifiers — used in application.yml and AppConfig switch
+    public static final String ANTHROPIC = "anthropic";
+    public static final String OPENAI = "openai";
+    public static final String NOOP = "noop";
 }
