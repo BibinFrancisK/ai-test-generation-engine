@@ -4,6 +4,8 @@ import com.testgen.generation.AnthropicLlmProvider;
 import com.testgen.generation.LlmProvider;
 import com.testgen.generation.NoopProvider;
 import com.testgen.generation.OpenAiLlmProvider;
+import com.testgen.generation.TestGenerationPromptBuilder;
+import com.testgen.generation.TestGenerationService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,5 +28,15 @@ public class AppConfig {
                     "Unknown LLM provider: " + config.provider() + ". Valid values: "
                             + ANTHROPIC + ", " + OPENAI + ", " + NOOP);
         };
+    }
+
+    @Bean
+    TestGenerationPromptBuilder testGenerationPromptBuilder() {
+        return new TestGenerationPromptBuilder();
+    }
+
+    @Bean
+    TestGenerationService testGenerationService(LlmProvider llmProvider, TestGenerationPromptBuilder promptBuilder) {
+        return new TestGenerationService(llmProvider, promptBuilder);
     }
 }
