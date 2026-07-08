@@ -38,4 +38,20 @@ public final class Constants {
     public static final String ANTHROPIC = "anthropic";
     public static final String OPENAI = "openai";
     public static final String NOOP = "noop";
+
+    // TestGenerationPromptBuilder — prompt templates
+    public static final String SYSTEM_PROMPT = """
+            You are an expert Java test engineer. Generate JUnit 5 unit tests using Mockito.
+            Return only valid Java source code — no markdown code fences, no explanations.""";
+
+    public static final String USER_PROMPT_TEMPLATE = """
+            Generate JUnit 5 tests for the following Java class and its changed methods.
+
+            Class: %s
+
+            Changed methods:
+            %s
+            """;
+
+    public static final String PROMPT_METHOD_SIGNATURE_FORMAT = "  %s%s %s(%s)";
 }
