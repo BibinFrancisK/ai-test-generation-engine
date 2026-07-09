@@ -2,7 +2,7 @@
 
 > Analyzes GitHub PR diffs, generates JUnit 5 tests via Anthropic Claude, validates them in-process, and opens a pull request with the results — automatically.
 
-**Status:** In Progress — Week 1
+**Status:** Week 1 complete (v0.1) — diff analysis → LLM test generation; validation + GitHub integration coming in Week 2
 
 ---
 
@@ -77,6 +77,20 @@ See [`docs/architecture.md`](docs/architecture.md) for the full component breakd
 
 ---
 
+## How It Works (Week 1 — Current State)
+
+The following pipeline is fully implemented and tested. GitHub integration, validation, and persistence land in Week 2.
+
+1. **Parse** — `DiffParser` turns a GitHub unified diff string into `FileDiff` records, extracting file paths and hunk line ranges for `.java` files only
+2. **Analyze** — `DiffAnalyzer` uses `SourceAnalyzer` (JavaParser AST) to correlate changed hunk line ranges to method signatures, producing a `List<ChangedMethod>`
+3. **Assemble prompt** — `TestGenerationPromptBuilder` builds a system prompt ("expert Java test engineer, return only valid Java") and a user prompt containing the class name, changed method signatures, return types, and annotations
+4. **Generate** — `TestGenerationService` calls the active `LlmProvider` (Anthropic Claude in production; `NoopProvider` in all tests), strips markdown code fences from the response, and extracts the class name via a lookahead regex
+5. **Write** — The generated JUnit 5 source is written to `tmp/generated-tests/{ClassName}.java` and returned as an immutable `GeneratedTest` record (`className`, `packageName`, `testCode`, `savedPath`, `generatedAt`)
+
+The active LLM provider is selected at startup via `testgen.llm.provider` in `application.yml` — switching between Anthropic and OpenAI requires only a config change, not a code change (sealed `LlmProvider` interface, ADR-002).
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -110,21 +124,21 @@ See [`docs/architecture.md`](docs/architecture.md) for the full component breakd
 
 ## Quickstart
 
-> Coming on Day 2 (Spring Boot scaffold). Steps will be:
-
 ```bash
-# 1. Copy and fill in secrets
-cp .env.example .env
+# 1. Copy and fill in your Anthropic API key
+cp .env.example .env        # then set LLM_API_KEY=sk-ant-...
 
-# 2. Start LocalStack (DynamoDB + S3 emulation)
-docker compose up -d
-
-# 3. Run all tests
+# 2. Run all tests (unit + integration; NoopProvider — no API key required)
 ./mvnw verify
 
-# 4. Start the app
+# 3. Run a single test class
+./mvnw -Dtest=DiffParserTest test
+
+# 4. Start the app (Week 2: requires LocalStack for DynamoDB/S3)
 ./mvnw spring-boot:run
 ```
+
+> **Note:** Docker Compose and LocalStack are added in Week 2 (Day 9). Until then, `./mvnw verify` is the primary dev loop.
 
 ---
 
