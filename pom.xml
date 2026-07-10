@@ -74,6 +74,17 @@
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- JUnit Platform Launcher in compile scope — TestExecutor is production code
+             that runs compiled tests in-process via the Launcher API -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
