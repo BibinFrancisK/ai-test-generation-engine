@@ -54,4 +54,6 @@ public final class Constants {
             """;
 
     public static final String PROMPT_METHOD_SIGNATURE_FORMAT = "  %s%s %s(%s)";
+    public static final String PROJECT_CONVENTIONS = "project-conventions";
+    public static final String TEST_RUNS = "test-runs";
 }

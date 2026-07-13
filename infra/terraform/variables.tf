@@ -1,2 +1,17 @@
-# Input variables: region, app_name, image_tag, anthropic_api_key_ssm_path, etc.
-# Implemented on Day 18 (Terraform + ECS deploy)
+variable "environment" {
+  description = "Deployment environment (dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}
+
+variable "region" {
+  description = "AWS region"
+  type = string
+  default = "us-east-1"
+}
+
+variable "local_endpoint" {
+  description = "Endpoint to direct locally emulated API calls to"
+  type = string
+  default = "http://localhost:4566"
+}
