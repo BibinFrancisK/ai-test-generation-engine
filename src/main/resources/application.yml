@@ -23,3 +23,8 @@ testgen:
     api-key: ${LLM_API_KEY:}
     model: ${LLM_MODEL:claude-haiku-4-5-20251001}
     max-tokens: 1500
+
+aws:
+  region: ${AWS_REGION:us-east-1}
+  dynamodb:
+    endpoint: ${AWS_DYNAMODB_ENDPOINT:}
