@@ -15,3 +15,9 @@ variable "local_endpoint" {
   type = string
   default = "http://localhost:4566"
 }
+
+variable "project" {
+  description = "The name of the project"
+  type = string
+  default = "ai-test-generation-engine"
+}
