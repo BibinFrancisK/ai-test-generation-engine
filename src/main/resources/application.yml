@@ -28,3 +28,6 @@ aws:
   region: ${AWS_REGION:us-east-1}
   dynamodb:
     endpoint: ${AWS_DYNAMODB_ENDPOINT:}
+  s3:
+    endpoint: ${AWS_S3_ENDPOINT:}
+    bucket-name: ${AWS_S3_BUCKET:test-generation-artifacts-dev}

@@ -16,7 +16,7 @@ resource "aws_dynamodb_table" "test_runs" {
 
   tags = {
     Environment = var.environment
-    Project     = "ai-test-generation-engine"
+    Project     = var.project
     ManagedBy   = "terraform"
   }
 }
@@ -33,7 +33,7 @@ resource "aws_dynamodb_table" "project_conventions" {
 
   tags = {
     Environment = var.environment
-    Project     = "ai-test-generation-engine"
+    Project     = var.project
     ManagedBy   = "terraform"
   }
 }
