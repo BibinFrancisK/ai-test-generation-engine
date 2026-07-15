@@ -2,6 +2,8 @@ package com.testgen.generation;
 
 import com.testgen.model.ChangedMethod;
 import com.testgen.model.GeneratedTest;
+import com.testgen.model.GenerationContext;
+import com.testgen.model.ProjectConventions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,11 +67,11 @@ class TestGenerationServiceTest {
 
     @Test
     void generateExtractsClassNameAndWritesFileToDisk() {
-        when(promptBuilder.buildSystemPrompt()).thenReturn("system prompt");
+        when(promptBuilder.buildSystemPrompt(any())).thenReturn("system prompt");
         when(promptBuilder.buildUserPrompt(any())).thenReturn("user prompt");
         doReturn(VALID_TEST_CLASS).when(llmProvider).generate(any(), any());
 
-        GeneratedTest result = service.generate(sampleMethods());
+        GeneratedTest result = service.generate(sampleContext());
         writtenFile = result.savedPath();
 
         assertThat(result.className()).isEqualTo("SampleServiceTest");
@@ -81,11 +84,11 @@ class TestGenerationServiceTest {
     @Test
     void generateStripsMarkdownFencesFromLlmResponse() throws IOException {
         String withFences = "```java\n" + VALID_TEST_CLASS + "\n```";
-        when(promptBuilder.buildSystemPrompt()).thenReturn("system prompt");
+        when(promptBuilder.buildSystemPrompt(any())).thenReturn("system prompt");
         when(promptBuilder.buildUserPrompt(any())).thenReturn("user prompt");
         doReturn(withFences).when(llmProvider).generate(any(), any());
 
-        GeneratedTest result = service.generate(sampleMethods());
+        GeneratedTest result = service.generate(sampleContext());
         writtenFile = result.savedPath();
 
         assertThat(result.testCode()).doesNotContain("```");
@@ -94,19 +97,24 @@ class TestGenerationServiceTest {
 
     @Test
     void generateThrowsWhenLlmResponseHasNoClassDeclaration() {
-        when(promptBuilder.buildSystemPrompt()).thenReturn("system prompt");
+        when(promptBuilder.buildSystemPrompt(any())).thenReturn("system prompt");
         when(promptBuilder.buildUserPrompt(any())).thenReturn("user prompt");
         doReturn("This is not valid Java code, no class declaration here.")
                 .when(llmProvider).generate(any(), any());
 
-        assertThatThrownBy(() -> service.generate(sampleMethods()))
+        assertThatThrownBy(() -> service.generate(sampleContext()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("no Java class declaration");
     }
 
-    private List<ChangedMethod> sampleMethods() {
-        return List.of(new ChangedMethod(
+    private GenerationContext sampleContext() {
+        ChangedMethod method = new ChangedMethod(
                 "SampleService", "process", List.of("String"), "void",
-                List.of("@Transactional"), 10, 20));
+                List.of("@Transactional"), 10, 20);
+        ProjectConventions conventions = new ProjectConventions(
+                "repo-1", "v1", "junit5", "mockito", Optional.empty(), "mirrors-source", Instant.now());
+
+        return new GenerationContext(
+                "class SampleService {}", Optional.empty(), List.of(), conventions, List.of(method));
     }
 }

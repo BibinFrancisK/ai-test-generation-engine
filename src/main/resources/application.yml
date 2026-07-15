@@ -31,3 +31,7 @@ aws:
   s3:
     endpoint: ${AWS_S3_ENDPOINT:}
     bucket-name: ${AWS_S3_BUCKET:test-generation-artifacts-dev}
+
+github:
+  token: ${GITHUB_TOKEN:}
+  api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
