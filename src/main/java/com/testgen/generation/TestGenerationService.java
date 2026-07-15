@@ -1,7 +1,7 @@
 package com.testgen.generation;
 
-import com.testgen.model.ChangedMethod;
 import com.testgen.model.GeneratedTest;
+import com.testgen.model.GenerationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +10,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,9 +35,9 @@ public class TestGenerationService {
         this.promptBuilder = promptBuilder;
     }
 
-    public GeneratedTest generate(List<ChangedMethod> changedMethods) {
-        String systemPrompt = promptBuilder.buildSystemPrompt();
-        String userPrompt = promptBuilder.buildUserPrompt(changedMethods);
+    public GeneratedTest generate(GenerationContext context) {
+        String systemPrompt = promptBuilder.buildSystemPrompt(context.conventions());
+        String userPrompt = promptBuilder.buildUserPrompt(context);
 
         String rawResponse = llmProvider.generate(systemPrompt, userPrompt);
         String testCode = rawResponse.replaceAll("```java|```", "").trim();

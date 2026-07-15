@@ -6,6 +6,8 @@ import com.testgen.generation.TestGenerationPromptBuilder;
 import com.testgen.generation.TestGenerationService;
 import com.testgen.model.ChangedMethod;
 import com.testgen.model.GeneratedTest;
+import com.testgen.model.GenerationContext;
+import com.testgen.model.ProjectConventions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -71,8 +74,13 @@ class TestGenerationPipelineIT {
         // NoopProvider spy returns a controlled, well-formed test class
         doReturn(VALID_TEST_CLASS).when(llmProvider).generate(anyString(), anyString());
 
+        ProjectConventions conventions = new ProjectConventions(
+                "repo-1", "v1", "junit5", "mockito", Optional.empty(), "mirrors-source", Instant.now());
+        GenerationContext context = new GenerationContext(
+                source, Optional.empty(), List.of(), conventions, changedMethods);
+
         TestGenerationService service = new TestGenerationService(llmProvider, promptBuilder);
-        GeneratedTest result = service.generate(changedMethods);
+        GeneratedTest result = service.generate(context);
         writtenFile = result.savedPath();
 
         assertThat(result.className()).isEqualTo("SampleServiceTest");

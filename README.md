@@ -18,59 +18,33 @@
 ## Architecture
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor Engineer
-    participant GH as GitHub
-    participant WC as WebhookController
-    participant WH as GitHubWebhookHandler
-    participant DA as DiffAnalyzer
-    participant CA as ContextAssembler
-    participant GCF as GitHubContentsFetcher
-    participant PCR as ProjectConventionsRepository
-    participant TGS as TestGenerationService
-    participant LLM as LlmProvider
-    participant TV as TestValidator
-    participant S3 as S3TestArtifactStore
-    participant DDB as DynamoDbTestRepository
-    participant GPC as GitHubPrCreator
+flowchart TD
+    GH["GitHub PR Event<br/>(open / synchronize)"]
+    GH -->|"POST /webhook/github"| WH
 
-    Engineer->>GH: opens pull request
-    GH->>WC: POST /webhook/github (pull_request event)
-    WC->>WC: verify HMAC-SHA256 signature<br/>(401 if invalid)
-    WC->>WH: route event payload
-    WH->>DA: parse unified diff + extract changed methods
-    DA->>CA: changedMethods + filePath + ref
-    note over CA: Two-tier context assembly (ADR-007)
-    CA->>GCF: fetch full source of changed class (Tier 1)
-    GCF-->>CA: sourceCode
-    CA->>GCF: find existing test file (Tier 1)
-    GCF-->>CA: existingTestSource (Optional)
-    CA->>GCF: fetch up to 3 dependency sources (Tier 1)
-    GCF-->>CA: dependencySources
-    CA->>PCR: load ProjectConventions by repositoryId (Tier 2)
-    alt conventions absent or stale (> 7 days)
-        PCR-->>CA: empty
-        CA->>GCF: list src/test/java/ — pick up to 5 .java files
-        CA->>CA: ProjectConventionsAnalyzer.analyze(testSources)
-        CA->>PCR: save refreshed ProjectConventions
-    else conventions fresh
-        PCR-->>CA: ProjectConventions
+    subgraph App["Spring Boot App"]
+        direction TB
+        WH["<b>GitHubWebhookHandler</b><br/><i>validates HMAC-SHA256, 401 if invalid</i>"]
+        WH --> DA["<b>DiffAnalyzer</b><br/><i>extracts changed methods (JavaParser AST)</i>"]
+        DA --> CA["<b>ContextAssembler</b>"]
+
+        CA -->|"Tier 1"| GCF["<b>GitHubContentsFetcher</b><br/><i>full source, existing test, up to 3 deps</i>"]
+        CA -->|"Tier 2"| PCR["<b>ProjectConventionsRepository</b><br/><i>cached; re-analyzed if absent or stale (7+ days)</i>"]
+        CA --> TGS["<b>TestGenerationService</b>"]
+
+        TGS -->|"generate"| LLM["<b>LlmProvider</b><br/><i>Anthropic Claude</i>"]
+        TGS --> TV["<b>TestValidator</b><br/><i>compiles + executes in-process</i>"]
+        TV --> S3S["<b>S3TestArtifactStore</b>"]
+        S3S -->|"upload"| S3["S3"]
+        S3S --> DDB["<b>DynamoDbTestRepository</b>"]
+        DDB -->|"persist"| DYN["DynamoDB"]
+        DDB --> GPC["<b>GitHubPrCreator</b><br/><i>branch → commit → PR → comment</i>"]
     end
-    CA->>TGS: GenerationContext
-    TGS->>LLM: prompt (system: conventions, user: source + existing test + deps + diff)
-    LLM-->>TGS: generated test source (String)
-    TGS->>TV: compile + execute generated test in-process
-    TV-->>TGS: ValidationResult (success / compile failure / execution failure)
-    TGS->>S3: upload GeneratedTest.java artifact
-    S3-->>TGS: s3ArtifactUrl
-    TGS->>DDB: save TestRun (status, s3ArtifactUrl, validationResult)
-    TGS->>GPC: GeneratedTest + metadata
-    GPC->>GH: POST /repos/{owner}/{repo}/git/refs (create testgen/ branch)
-    GPC->>GH: PUT /repos/{owner}/{repo}/contents/{path} (commit test file)
-    GPC->>GH: POST /repos/{owner}/{repo}/pulls (open test PR)
-    GPC->>GH: POST /repos/{owner}/{repo}/issues/{n}/comments (link comment on source PR)
-    GH-->>Engineer: test PR visible + notification comment on source PR
+
+    GPC -->|"test PR + notification comment"| DONE["Engineer sees<br/>generated tests"]
+
+    classDef external fill:#eef2f7,stroke:#8899aa,color:#334;
+    class GCF,PCR,LLM,S3,DYN,GH,DONE external;
 ```
 
 See [`docs/architecture.md`](docs/architecture.md) for the full component breakdown.
