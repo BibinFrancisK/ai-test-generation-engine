@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
@@ -19,6 +22,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class GitHubContentsFetcherTest {
 
     private static final String BASE_URL = "http://localhost";
+    private static final String INSTALLATION_TOKEN = "installation-token-123";
 
     private MockRestServiceServer mockServer;
     private GitHubContentsFetcher fetcher;
@@ -27,7 +31,11 @@ class GitHubContentsFetcherTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
         mockServer = MockRestServiceServer.bindTo(builder).build();
-        fetcher = new GitHubContentsFetcher(builder.build());
+
+        GitHubAppAuthenticator authenticator = mock(GitHubAppAuthenticator.class);
+        when(authenticator.getInstallationToken()).thenReturn(INSTALLATION_TOKEN);
+
+        fetcher = new GitHubContentsFetcher(builder.build(), authenticator);
     }
 
     @Test
@@ -37,6 +45,7 @@ class GitHubContentsFetcherTest {
 
         mockServer.expect(requestTo(BASE_URL + "/repos/owner/repo/contents/src/main/java/com/example/Foo.java?ref=main"))
                 .andExpect(method(org.springframework.http.HttpMethod.GET))
+                .andExpect(header("Authorization", "Bearer " + INSTALLATION_TOKEN))
                 .andRespond(withSuccess(
                         "{\"content\":\"" + base64Content + "\",\"encoding\":\"base64\"}",
                         MediaType.APPLICATION_JSON));

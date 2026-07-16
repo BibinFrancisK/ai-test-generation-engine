@@ -4,6 +4,7 @@ import com.testgen.model.ContentsApiResponse;
 import com.testgen.model.ContentsListEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -25,9 +26,11 @@ public class GitHubContentsFetcher {
     private static final Logger log = LoggerFactory.getLogger(GitHubContentsFetcher.class);
 
     private final RestClient gitHubRestClient;
+    private final GitHubAppAuthenticator gitHubAppAuthenticator;
 
-    public GitHubContentsFetcher(RestClient gitHubRestClient) {
+    public GitHubContentsFetcher(RestClient gitHubRestClient, GitHubAppAuthenticator gitHubAppAuthenticator) {
         this.gitHubRestClient = gitHubRestClient;
+        this.gitHubAppAuthenticator = gitHubAppAuthenticator;
     }
 
     public Optional<String> findTestFile(String owner, String repo, String sourceFilePath, String ref) {
@@ -39,6 +42,7 @@ public class GitHubContentsFetcher {
         try {
             ContentsApiResponse response = gitHubRestClient.get()
                     .uri("/repos/{owner}/{repo}/contents/" + path + "?ref={ref}", owner, repo, ref)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + gitHubAppAuthenticator.getInstallationToken())
                     .retrieve()
                     .body(ContentsApiResponse.class);
 
@@ -57,6 +61,7 @@ public class GitHubContentsFetcher {
         try {
             ContentsListEntry[] entries = gitHubRestClient.get()
                     .uri("/repos/{owner}/{repo}/contents/" + directoryPath + "?ref={ref}", owner, repo, ref)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + gitHubAppAuthenticator.getInstallationToken())
                     .retrieve()
                     .body(ContentsListEntry[].class);
 

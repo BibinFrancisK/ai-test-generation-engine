@@ -7,5 +7,6 @@ public record TestGenerationRequest(
         String repositoryId,
         String pullRequestId,
         String diffContent,
-        String changedFilePath
+        String changedFilePath,
+        String sourceBranchSha
 ) {}

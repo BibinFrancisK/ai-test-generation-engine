@@ -55,6 +55,76 @@ class TestValidatorTest {
         }
     }
 
+    @Test
+    void testReferencingExternalClassUnderTest_compilesWhenSourceIsProvided() {
+        String classUnderTestSource = """
+                package com.testgen.smoketest;
+
+                public class Greeter {
+                    public String greet(String name) {
+                        return "Hello, " + name + "!";
+                    }
+                }
+                """;
+        String testSource = """
+                package com.testgen.smoketest;
+
+                import org.junit.jupiter.api.Test;
+
+                import static org.junit.jupiter.api.Assertions.assertEquals;
+
+                class GreeterTest {
+
+                    @Test
+                    void greetsByName() {
+                        assertEquals("Hello, World!", new Greeter().greet("World"));
+                    }
+                }
+                """;
+        GeneratedTest generatedTest = new GeneratedTest(
+                "GreeterTest", "com.testgen.smoketest", testSource, Path.of("tmp/GreeterTest.java"), Instant.now());
+
+        ValidationResult result = validator.validate(generatedTest, classUnderTestSource, "Greeter");
+
+        switch (result) {
+            case ValidationResult.ValidationSuccess success -> assertThat(success.testCount()).isEqualTo(1);
+            case ValidationResult.ValidationFailure failure ->
+                fail("Expected ValidationSuccess but got ValidationFailure(failedAt=%s, errors=%s)"
+                        .formatted(failure.failedAt(), failure.errors()));
+        }
+    }
+
+    @Test
+    void testReferencingExternalClassUnderTest_failsCompileWhenSourceIsOmitted() {
+        String testSource = """
+                package com.testgen.smoketest;
+
+                import org.junit.jupiter.api.Test;
+
+                import static org.junit.jupiter.api.Assertions.assertEquals;
+
+                class GreeterWithoutSourceTest {
+
+                    @Test
+                    void greetsByName() {
+                        assertEquals("Hello, World!", new Greeter().greet("World"));
+                    }
+                }
+                """;
+        GeneratedTest generatedTest = new GeneratedTest(
+                "GreeterWithoutSourceTest", "com.testgen.smoketest", testSource,
+                Path.of("tmp/GreeterWithoutSourceTest.java"), Instant.now());
+
+        ValidationResult result = validator.validate(generatedTest);
+
+        switch (result) {
+            case ValidationResult.ValidationFailure failure -> assertThat(failure.failedAt()).isEqualTo(ValidationStage.COMPILE);
+            case ValidationResult.ValidationSuccess success ->
+                fail("Expected ValidationFailure(COMPILE) since Greeter's source was never provided, but got ValidationSuccess with %d test(s)"
+                        .formatted(success.testCount()));
+        }
+    }
+
     private GeneratedTest buildGeneratedTest(String className, String packageName, String fixturePath) throws IOException {
         String source = loadFixture(fixturePath);
         return new GeneratedTest(className, packageName, source, Path.of("tmp/" + className + ".java"), Instant.now());

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -27,13 +28,30 @@ public class TestValidator {
     }
 
     public ValidationResult validate(GeneratedTest generatedTest) {
+        return validate(generatedTest, null, null);
+    }
+
+    /**
+     * Validates the generated test, compiling it alongside the class-under-test's source when
+     * provided — required whenever that class isn't already on the running application's own
+     * classpath (the common case: the engine tests a target repository's code, not its own).
+     */
+    public ValidationResult validate(GeneratedTest generatedTest, String classUnderTestSource,
+                                      String classUnderTestClassName) {
         Path tempDir = null;
         try {
             tempDir = Files.createTempDirectory("testgen-validate-");
             Path sourceFile = tempDir.resolve(generatedTest.className() + ".java");
             Files.writeString(sourceFile, generatedTest.testCode());
 
-            List<String> compileErrors = compiler.compile(sourceFile, tempDir);
+            List<Path> compilationUnits = new ArrayList<>(List.of(sourceFile));
+            if (classUnderTestSource != null && classUnderTestClassName != null) {
+                Path classUnderTestFile = tempDir.resolve(classUnderTestClassName + ".java");
+                Files.writeString(classUnderTestFile, classUnderTestSource);
+                compilationUnits.add(classUnderTestFile);
+            }
+
+            List<String> compileErrors = compiler.compile(compilationUnits, tempDir);
             if (!compileErrors.isEmpty()) {
                 log.debug("Compile failure for {}: {} error(s)",
                         generatedTest.className(), compileErrors.size());

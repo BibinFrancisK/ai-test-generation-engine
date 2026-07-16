@@ -61,6 +61,8 @@ public final class Constants {
     // S3TestArtifactStore — object key prefix
     public static final String S3_KEY_PREFIX = "test-artifacts/";
 
+    public static final String HMAC_ALGORITHM = "HmacSHA256";
+    public static final String SIGNATURE_PREFIX = "sha256=";
     public static final String TEST_SOURCE_ROOT = "src/test/java";
     public static final List<String> SKIPPED_IMPORT_PREFIXES = List.of("java.", "org.springframework.", "org.junit.");
     public static final Pattern IMPORT_PATTERN = Pattern.compile("import\\s+([\\w.]+)\\s*;");
@@ -73,5 +75,15 @@ public final class Constants {
     public static final String STATUS_COMPILE_FAILED = "COMPILE_FAILED";
     public static final String STATUS_EXECUTION_FAILED = "EXECUTION_FAILED";
     public static final String STATUS_FAILED = "FAILED";
+
+    // GitHubAppAuthenticator — JWT signing and installation token cache
+    public static final String JWT_SIGNATURE_ALGORITHM = "SHA256withRSA";
+    public static final String JWT_HEADER_JSON = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";
+    public static final Duration JWT_IAT_BACKDATE = Duration.ofSeconds(60);
+    public static final Duration JWT_TTL = Duration.ofMinutes(9);
+    public static final Duration INSTALLATION_TOKEN_REFRESH_MARGIN = Duration.ofMinutes(1);
+
+    // GitHubPrCreator — retry backoff for 5xx responses
+    public static final Duration GITHUB_RETRY_BACKOFF = Duration.ofMillis(500);
 
 }

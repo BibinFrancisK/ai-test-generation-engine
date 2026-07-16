@@ -85,6 +85,7 @@ class DynamoDbTestRepositoryIT {
                 "SUCCESS",
                 Instant.now().truncatedTo(ChronoUnit.SECONDS).toString(),
                 "s3://bucket/FooTest.java",
+                "https://github.com/owner/repo/pull/1",
                 "v1"
         );
 
@@ -111,6 +112,7 @@ class DynamoDbTestRepositoryIT {
                 "class BarTest {}",
                 "FAILED",
                 Instant.now().truncatedTo(ChronoUnit.SECONDS).toString(),
+                null,
                 null,
                 "v1"
         );
