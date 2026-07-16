@@ -21,4 +21,8 @@ public class WebhookSmokeTarget {
     public String repeat(String name, int times) {
         return name.repeat(Math.max(times, 0));
     }
+
+    public String reverse(String name) {
+        return new StringBuilder(name).reverse().toString();
+    }
 }
