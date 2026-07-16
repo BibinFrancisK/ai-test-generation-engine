@@ -17,4 +17,8 @@ public class WebhookSmokeTarget {
     public String whisper(String name) {
         return name.toLowerCase() + "...";
     }
+
+    public String repeat(String name, int times) {
+        return name.repeat(Math.max(times, 0));
+    }
 }
