@@ -13,4 +13,8 @@ public class WebhookSmokeTarget {
     public String shout(String name) {
         return name.toUpperCase() + "!!!";
     }
+
+    public String whisper(String name) {
+        return name.toLowerCase() + "...";
+    }
 }
