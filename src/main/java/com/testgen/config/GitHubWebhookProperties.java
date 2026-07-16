@@ -2,6 +2,6 @@ package com.testgen.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "github")
-public record GitHubProperties(String apiBaseUrl) {
+@ConfigurationProperties(prefix = "github.webhook")
+public record GitHubWebhookProperties(String secret) {
 }

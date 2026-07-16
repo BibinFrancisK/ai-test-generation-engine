@@ -13,6 +13,7 @@ public class TestRunEntity {
     private String validationStatus;
     private String createdAt;
     private String s3ArtifactKey;
+    private String testPrUrl;
     private String schemaVersion;
 
     @DynamoDbPartitionKey
@@ -37,6 +38,9 @@ public class TestRunEntity {
 
     public String getS3ArtifactKey() { return s3ArtifactKey; }
     public void setS3ArtifactKey(String s3ArtifactKey) { this.s3ArtifactKey = s3ArtifactKey; }
+
+    public String getTestPrUrl() { return testPrUrl; }
+    public void setTestPrUrl(String testPrUrl) { this.testPrUrl = testPrUrl; }
 
     public String getSchemaVersion() { return schemaVersion; }
     public void setSchemaVersion(String schemaVersion) { this.schemaVersion = schemaVersion; }

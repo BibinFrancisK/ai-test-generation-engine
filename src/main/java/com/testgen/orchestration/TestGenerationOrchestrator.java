@@ -7,6 +7,8 @@ import com.testgen.api.TestGenerationResponse;
 import com.testgen.context.ContextAssembler;
 import com.testgen.generation.TestGenerationService;
 import com.testgen.github.GitHubContentsFetcher;
+import com.testgen.github.GitHubPrCreator;
+import com.testgen.github.PrDeliveryRequest;
 import com.testgen.model.ChangedMethod;
 import com.testgen.model.FileDiff;
 import com.testgen.model.GeneratedTest;
@@ -44,6 +46,7 @@ public class TestGenerationOrchestrator {
     private final TestValidator testValidator;
     private final S3TestArtifactStore artifactStore;
     private final DynamoDbTestRepository testRepository;
+    private final GitHubPrCreator gitHubPrCreator;
 
     public TestGenerationOrchestrator(GitHubContentsFetcher contentsFetcher,
                                        DiffParser diffParser,
@@ -52,7 +55,8 @@ public class TestGenerationOrchestrator {
                                        TestGenerationService testGenerationService,
                                        TestValidator testValidator,
                                        S3TestArtifactStore artifactStore,
-                                       DynamoDbTestRepository testRepository) {
+                                       DynamoDbTestRepository testRepository,
+                                       GitHubPrCreator gitHubPrCreator) {
         this.contentsFetcher = contentsFetcher;
         this.diffParser = diffParser;
         this.diffAnalyzer = diffAnalyzer;
@@ -61,58 +65,96 @@ public class TestGenerationOrchestrator {
         this.testValidator = testValidator;
         this.artifactStore = artifactStore;
         this.testRepository = testRepository;
+        this.gitHubPrCreator = gitHubPrCreator;
     }
 
     public TestGenerationResponse orchestrate(TestGenerationRequest request) {
         String testRunId = UUID.randomUUID().toString();
 
         try {
-            String fullSource = contentsFetcher
-                    .fetchFileContent(request.owner(), request.repo(), request.changedFilePath(), request.ref())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Could not fetch source for " + request.changedFilePath() + " at ref " + request.ref()));
+            String changedFilePath = request.changedFilePath();
+            List<FileDiff> fileDiffs = null;
+            if (changedFilePath == null || changedFilePath.isBlank()) {
+                fileDiffs = diffParser.parse(request.diffContent());
+                changedFilePath = firstJavaFilePath(fileDiffs);
+            }
 
-            List<FileDiff> fileDiffs = diffParser.parse(request.diffContent());
+            String resolvedFilePath = changedFilePath;
+            String fullSource = contentsFetcher
+                    .fetchFileContent(request.owner(), request.repo(), changedFilePath, request.ref())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Could not fetch source for " + resolvedFilePath + " at ref " + request.ref()));
+
+            if (fileDiffs == null) {
+                fileDiffs = diffParser.parse(request.diffContent());
+            }
             List<ChangedMethod> changedMethods = diffAnalyzer.analyze(
-                    fileDiffs, Map.of(request.changedFilePath(), fullSource));
+                    fileDiffs, Map.of(changedFilePath, fullSource));
 
             GenerationContext context = contextAssembler.assemble(
-                    request.owner(), request.repo(), request.ref(), request.changedFilePath(),
+                    request.owner(), request.repo(), request.ref(), changedFilePath,
                     changedMethods, request.repositoryId());
 
             GeneratedTest generatedTest = testGenerationService.generate(context);
-            ValidationResult validationResult = testValidator.validate(generatedTest);
+            ValidationResult validationResult = testValidator.validate(
+                    generatedTest, fullSource, changedMethods.getFirst().className());
+            if (validationResult instanceof ValidationResult.ValidationFailure failure) {
+                log.warn("Validation failed at {} for testRunId={}: {}",
+                        failure.failedAt(), testRunId, failure.errors());
+            }
 
             String s3Key = S3TestArtifactStore.buildKey(
-                    request.repositoryId(), testRunId, generatedTest.className());
+                    request.repositoryId(), testRunId, changedMethods.getFirst().className());
             String s3Uri = artifactStore.upload(generatedTest.testCode(), s3Key);
 
-            return persistAndRespond(testRunId, request, generatedTest, validationResult, s3Uri);
+            String testPrUrl = null;
+            if (validationResult instanceof ValidationResult.ValidationSuccess && request.sourceBranchSha() != null) {
+                testPrUrl = deliverPullRequest(request, generatedTest, changedMethods);
+            }
+
+            return persistAndRespond(testRunId, request, generatedTest, validationResult, s3Uri, testPrUrl);
         } catch (Exception e) {
             log.error("Test generation failed for testRunId={}, repositoryId={}, pullRequestId={}",
                     testRunId, request.repositoryId(), request.pullRequestId(), e);
 
             testRepository.save(new TestRun(
                     testRunId, request.repositoryId(), request.pullRequestId(),
-                    null, STATUS_FAILED, Instant.now().toString(), null, SCHEMA_VERSION_V1));
+                    null, STATUS_FAILED, Instant.now().toString(), null, null, SCHEMA_VERSION_V1));
 
             return new TestGenerationResponse(
                     testRunId, null, STATUS_FAILED, List.of(), null, null, Instant.now());
         }
     }
 
+    private String firstJavaFilePath(List<FileDiff> fileDiffs) {
+        if (fileDiffs.isEmpty()) {
+            throw new IllegalStateException("No Java file changes found in diff content");
+        }
+        return fileDiffs.getFirst().filePath();
+    }
+
+    private String deliverPullRequest(TestGenerationRequest request, GeneratedTest generatedTest,
+                                       List<ChangedMethod> changedMethods) {
+        PrDeliveryRequest deliveryRequest = new PrDeliveryRequest(
+                request.owner(), request.repo(), request.ref(), request.sourceBranchSha(),
+                Integer.parseInt(request.pullRequestId()), generatedTest, STATUS_SUCCESS,
+                changedMethods.stream().map(ChangedMethod::methodName).toList());
+        return gitHubPrCreator.deliver(deliveryRequest);
+    }
+
     private TestGenerationResponse persistAndRespond(String testRunId, TestGenerationRequest request,
                                                        GeneratedTest generatedTest,
-                                                       ValidationResult validationResult, String s3Uri) {
+                                                       ValidationResult validationResult, String s3Uri,
+                                                       String testPrUrl) {
         String status = statusFor(validationResult);
         List<String> errors = errorsFor(validationResult);
 
         testRepository.save(new TestRun(
                 testRunId, request.repositoryId(), request.pullRequestId(),
-                generatedTest.testCode(), status, Instant.now().toString(), s3Uri, SCHEMA_VERSION_V1));
+                generatedTest.testCode(), status, Instant.now().toString(), s3Uri, testPrUrl, SCHEMA_VERSION_V1));
 
         return new TestGenerationResponse(
-                testRunId, generatedTest.testCode(), status, errors, s3Uri, null, Instant.now());
+                testRunId, generatedTest.testCode(), status, errors, s3Uri, testPrUrl, Instant.now());
     }
 
     private String statusFor(ValidationResult result) {

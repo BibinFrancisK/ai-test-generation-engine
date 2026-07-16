@@ -37,6 +37,7 @@ replay_pid*
 # Secrets and local config
 .env
 .env.*
+!docs/.env.example
 *.pem
 
 # Runtime artifacts

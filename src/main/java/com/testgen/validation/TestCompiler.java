@@ -28,6 +28,17 @@ public class TestCompiler {
      * @return empty list on success; non-empty list of error messages on compile failure
      */
     public List<String> compile(Path sourceFile, Path outputDir) throws IOException {
+        return compile(List.of(sourceFile), outputDir);
+    }
+
+    /**
+     * Compiles the given Java source files together to outputDir — used when the generated test
+     * references a class-under-test that isn't already on the running application's classpath
+     * (e.g. a class from the target repository the engine was installed on).
+     *
+     * @return empty list on success; non-empty list of error messages on compile failure
+     */
+    public List<String> compile(List<Path> sourceFiles, Path outputDir) throws IOException {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new IllegalStateException("Java compiler not available — run the application with a JDK, not a JRE");
@@ -41,7 +52,7 @@ public class TestCompiler {
                      compiler.getStandardFileManager(diagnostics, Locale.getDefault(), null)) {
 
             Iterable<? extends JavaFileObject> compilationUnits =
-                    fileManager.getJavaFileObjects(sourceFile.toFile());
+                    fileManager.getJavaFileObjectsFromFiles(sourceFiles.stream().map(Path::toFile).toList());
 
             // Explicit -classpath is required so JUnit 5 and other test imports resolve.
             // Without this, generated tests fail with "package org.junit.jupiter.api does not exist".
@@ -55,7 +66,7 @@ public class TestCompiler {
             boolean success = task.call();
 
             if (success) {
-                log.debug("Compilation succeeded: {}", sourceFile.getFileName());
+                log.debug("Compilation succeeded: {}", sourceFiles);
                 return List.of();
             }
 
@@ -67,7 +78,7 @@ public class TestCompiler {
                             sourceName, d.getLineNumber(), d.getMessage(Locale.getDefault())));
                 }
             }
-            log.debug("Compilation failed with {} error(s) in: {}", errors.size(), sourceFile.getFileName());
+            log.debug("Compilation failed with {} error(s) in: {}", errors.size(), sourceFiles);
             return errors;
         }
     }

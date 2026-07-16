@@ -8,5 +8,6 @@ public record TestRun(
         String validationStatus,
         String createdAt,
         String s3ArtifactKey,
+        String testPrUrl,
         String schemaVersion
 ) {}

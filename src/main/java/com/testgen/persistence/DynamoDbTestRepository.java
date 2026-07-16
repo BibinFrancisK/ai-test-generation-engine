@@ -57,6 +57,7 @@ public class DynamoDbTestRepository {
         e.setValidationStatus(r.validationStatus());
         e.setCreatedAt(r.createdAt());
         e.setS3ArtifactKey(r.s3ArtifactKey());
+        e.setTestPrUrl(r.testPrUrl());
         e.setSchemaVersion(r.schemaVersion());
         return e;
     }
@@ -70,6 +71,7 @@ public class DynamoDbTestRepository {
                 e.getValidationStatus(),
                 e.getCreatedAt(),
                 e.getS3ArtifactKey(),
+                e.getTestPrUrl(),
                 e.getSchemaVersion()
         );
     }

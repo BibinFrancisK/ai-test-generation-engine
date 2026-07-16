@@ -7,6 +7,8 @@ import com.testgen.api.TestGenerationResponse;
 import com.testgen.context.ContextAssembler;
 import com.testgen.generation.TestGenerationService;
 import com.testgen.github.GitHubContentsFetcher;
+import com.testgen.github.GitHubPrCreator;
+import com.testgen.github.PrDeliveryRequest;
 import com.testgen.model.ChangedMethod;
 import com.testgen.model.FileDiff;
 import com.testgen.model.GeneratedTest;
@@ -34,6 +36,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -67,6 +70,8 @@ class TestGenerationOrchestratorTest {
     private S3TestArtifactStore artifactStore;
     @Mock
     private DynamoDbTestRepository testRepository;
+    @Mock
+    private GitHubPrCreator gitHubPrCreator;
 
     private TestGenerationOrchestrator orchestrator;
     private TestGenerationRequest request;
@@ -74,8 +79,9 @@ class TestGenerationOrchestratorTest {
     @BeforeEach
     void setUp() {
         orchestrator = new TestGenerationOrchestrator(contentsFetcher, diffParser, diffAnalyzer, contextAssembler,
-                testGenerationService, testValidator, artifactStore, testRepository);
-        request = new TestGenerationRequest(OWNER, REPO, REF, REPOSITORY_ID, PULL_REQUEST_ID, DIFF_CONTENT, CHANGED_FILE_PATH);
+                testGenerationService, testValidator, artifactStore, testRepository, gitHubPrCreator);
+        request = new TestGenerationRequest(
+                OWNER, REPO, REF, REPOSITORY_ID, PULL_REQUEST_ID, DIFF_CONTENT, CHANGED_FILE_PATH, null);
     }
 
     @Test
@@ -95,7 +101,7 @@ class TestGenerationOrchestratorTest {
         when(contextAssembler.assemble(OWNER, REPO, REF, CHANGED_FILE_PATH, changedMethods, REPOSITORY_ID))
                 .thenReturn(context);
         when(testGenerationService.generate(context)).thenReturn(generatedTest);
-        when(testValidator.validate(generatedTest)).thenReturn(success);
+        when(testValidator.validate(generatedTest, "full source", "Foo")).thenReturn(success);
         when(artifactStore.upload(eq("class FooTest {}"), anyString())).thenReturn("s3://bucket/key");
 
         TestGenerationResponse response = orchestrator.orchestrate(request);
@@ -107,7 +113,7 @@ class TestGenerationOrchestratorTest {
         inOrder.verify(diffAnalyzer).analyze(fileDiffs, Map.of(CHANGED_FILE_PATH, "full source"));
         inOrder.verify(contextAssembler).assemble(OWNER, REPO, REF, CHANGED_FILE_PATH, changedMethods, REPOSITORY_ID);
         inOrder.verify(testGenerationService).generate(context);
-        inOrder.verify(testValidator).validate(generatedTest);
+        inOrder.verify(testValidator).validate(generatedTest, "full source", "Foo");
         inOrder.verify(artifactStore).upload(eq("class FooTest {}"), anyString());
         inOrder.verify(testRepository).save(any(TestRun.class));
 
@@ -116,10 +122,50 @@ class TestGenerationOrchestratorTest {
         assertThat(response.generatedTestCode()).isEqualTo("class FooTest {}");
         assertThat(response.s3ArtifactUrl()).isEqualTo("s3://bucket/key");
         assertThat(response.validationErrors()).isEmpty();
+        assertThat(response.testPrUrl()).isNull();
+        verify(gitHubPrCreator, never()).deliver(any());
+    }
+
+    @Test
+    void deliversPullRequestWhenValidationSucceedsAndSourceBranchShaIsProvided() {
+        TestGenerationRequest deliveryRequest = new TestGenerationRequest(
+                OWNER, REPO, REF, REPOSITORY_ID, "42", DIFF_CONTENT, CHANGED_FILE_PATH, "source-branch-sha");
+        List<ChangedMethod> changedMethods = List.of(sampleMethod());
+        List<FileDiff> fileDiffs = List.of();
+        GenerationContext context = sampleContext(changedMethods);
+        GeneratedTest generatedTest = new GeneratedTest(
+                "FooTest", "com.example", "class FooTest {}", Path.of("tmp", "FooTest.java"), Instant.now());
+        ValidationResult.ValidationSuccess success =
+                new ValidationResult.ValidationSuccess("FooTest", List.of("shouldWork"), 1);
+
+        when(contentsFetcher.fetchFileContent(OWNER, REPO, CHANGED_FILE_PATH, REF))
+                .thenReturn(Optional.of("full source"));
+        when(diffParser.parse(DIFF_CONTENT)).thenReturn(fileDiffs);
+        when(diffAnalyzer.analyze(fileDiffs, Map.of(CHANGED_FILE_PATH, "full source"))).thenReturn(changedMethods);
+        when(contextAssembler.assemble(OWNER, REPO, REF, CHANGED_FILE_PATH, changedMethods, REPOSITORY_ID))
+                .thenReturn(context);
+        when(testGenerationService.generate(context)).thenReturn(generatedTest);
+        when(testValidator.validate(generatedTest, "full source", "Foo")).thenReturn(success);
+        when(artifactStore.upload(eq("class FooTest {}"), anyString())).thenReturn("s3://bucket/key");
+        when(gitHubPrCreator.deliver(any(PrDeliveryRequest.class)))
+                .thenReturn("https://github.com/owner/repo/pull/99");
+
+        TestGenerationResponse response = orchestrator.orchestrate(deliveryRequest);
+
+        assertThat(response.testPrUrl()).isEqualTo("https://github.com/owner/repo/pull/99");
+        verify(gitHubPrCreator).deliver(argThat(delivered ->
+                delivered.owner().equals(OWNER)
+                        && delivered.repo().equals(REPO)
+                        && delivered.sourceBranch().equals(REF)
+                        && delivered.sourceBranchSha().equals("source-branch-sha")
+                        && delivered.sourcePrNumber() == 42
+                        && delivered.coveredMethods().equals(List.of("bar"))));
     }
 
     @Test
     void compileFailureStillPersistsTestRunAndReturns422ShapedResponse() {
+        TestGenerationRequest requestWithShaPresent = new TestGenerationRequest(
+                OWNER, REPO, REF, REPOSITORY_ID, PULL_REQUEST_ID, DIFF_CONTENT, CHANGED_FILE_PATH, "source-branch-sha");
         List<ChangedMethod> changedMethods = List.of(sampleMethod());
         GenerationContext context = sampleContext(changedMethods);
         GeneratedTest generatedTest = new GeneratedTest(
@@ -134,14 +180,16 @@ class TestGenerationOrchestratorTest {
         when(contextAssembler.assemble(OWNER, REPO, REF, CHANGED_FILE_PATH, changedMethods, REPOSITORY_ID))
                 .thenReturn(context);
         when(testGenerationService.generate(context)).thenReturn(generatedTest);
-        when(testValidator.validate(generatedTest)).thenReturn(failure);
+        when(testValidator.validate(generatedTest, "full source", "Foo")).thenReturn(failure);
         when(artifactStore.upload(anyString(), anyString())).thenReturn("s3://bucket/key");
 
-        TestGenerationResponse response = orchestrator.orchestrate(request);
+        TestGenerationResponse response = orchestrator.orchestrate(requestWithShaPresent);
 
         assertThat(response.validationStatus()).isEqualTo("COMPILE_FAILED");
         assertThat(response.validationErrors()).containsExactly("cannot find symbol");
+        assertThat(response.testPrUrl()).isNull();
         verify(testRepository).save(any(TestRun.class));
+        verify(gitHubPrCreator, never()).deliver(any());
     }
 
     @Test

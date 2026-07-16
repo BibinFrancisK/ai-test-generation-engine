@@ -88,6 +88,7 @@ class TestGenerationControllerTest {
     }
 
     private TestGenerationRequest sampleRequest() {
-        return new TestGenerationRequest("owner", "repo", "main", "repo-1", "pr-1", "diff", "src/main/java/Foo.java");
+        return new TestGenerationRequest(
+                "owner", "repo", "main", "repo-1", "pr-1", "diff", "src/main/java/Foo.java", null);
     }
 }
