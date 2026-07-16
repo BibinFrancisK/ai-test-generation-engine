@@ -9,4 +9,8 @@ public class WebhookSmokeTarget {
     public String farewell(String name) {
         return "Goodbye, " + name + "!";
     }
+
+    public String shout(String name) {
+        return name.toUpperCase() + "!!!";
+    }
 }
