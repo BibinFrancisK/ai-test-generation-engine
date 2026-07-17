@@ -142,7 +142,7 @@ class GitHubWebhookHandlerIT {
 
         @Bean
         @Primary
-        RestClient gitHubRestClient(RestClient.Builder gitHubRestClientBuilder, MockRestServiceServer mockGitHubServer) {
+        RestClient mockedGitHubRestClient(RestClient.Builder gitHubRestClientBuilder, MockRestServiceServer mockGitHubServer) {
             return gitHubRestClientBuilder.build();
         }
     }
