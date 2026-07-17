@@ -20,5 +20,5 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build and run unit tests
-        run: ./mvnw verify -B -q
+      - name: Build, unit tests, and integration tests
+        run: ./mvnw verify -B

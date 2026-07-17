@@ -1,5 +1,7 @@
 # AI-Powered Test Generation Engine
 
+[![CI](https://github.com/BibinFrancisK/ai-test-generation-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/BibinFrancisK/ai-test-generation-engine/actions/workflows/ci.yml)
+
 > Analyzes GitHub PR diffs, generates JUnit 5 tests via Anthropic Claude, validates them in-process, and opens a pull request with the results — automatically.
 
 **Status:** Week 1 complete (v0.1) — diff analysis → LLM test generation; validation + GitHub integration coming in Week 2
