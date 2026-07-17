@@ -6,6 +6,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+// Intentionally avoiding *IT.java naming convention - run this test on a need basis only.
 @Tag("integration")
 class LlmProviderIntegrationTest {
 

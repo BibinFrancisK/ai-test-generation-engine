@@ -1,4 +1,8 @@
-# Enforces zero real LLM calls during ./mvnw verify — see .claude/rules/testing.md
+# Enforces zero real LLM calls during mvn verify
 testgen:
   llm:
     provider: noop
+
+github:
+  webhook:
+    secret: test-webhook-secret-not-a-real-secret
