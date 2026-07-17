@@ -2,3 +2,7 @@
 testgen:
   llm:
     provider: noop
+
+github:
+  webhook:
+    secret: test-webhook-secret-not-a-real-secret

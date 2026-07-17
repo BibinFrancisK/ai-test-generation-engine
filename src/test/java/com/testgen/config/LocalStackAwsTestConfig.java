@@ -11,13 +11,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
 
-/**
- * Overrides {@link AwsConfig}'s DynamoDbClient/S3Client beans with LocalStack-only static
- * credentials — LocalStack never validates them, but the SDK still refuses to make a call
- * without something resolving. {@code @Primary} lets this coexist with the production beans
- * (different bean names, no bean-definition-overriding needed) so real AWS wiring in
- * {@code src/main} never has to know test credentials exist.
- */
 @TestConfiguration
 public class LocalStackAwsTestConfig {
 
