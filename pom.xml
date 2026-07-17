@@ -23,6 +23,10 @@
         <javaparser.version>3.28.2</javaparser.version>
         <langchain4j.version>1.17.2</langchain4j.version>
         <aws.sdk.version>2.26.31</aws.sdk.version>
+        <!-- Testcontainers is unreliable on Windows dev machines (Docker Desktop/WSL2 integration
+             issues); the windows-skip-integration-tests profile below flips this to true so ITs
+             are skipped locally on Windows and only actually run on Linux (CI). -->
+        <skipITs>false</skipITs>
     </properties>
 
     <dependencyManagement>
@@ -142,7 +146,41 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.5.6</version>
+                <configuration>
+                    <!-- Bound to false on non-Windows OSes; the windows-skip-integration-tests
+                         profile flips this to true so Testcontainers-backed ITs never attempt
+                         to run locally on Windows, only on Linux (CI). -->
+                    <skipITs>${skipITs}</skipITs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>windows-skip-integration-tests</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <skipITs>true</skipITs>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

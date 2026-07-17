@@ -6,6 +6,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+// Runs under Surefire (matches its *Test.java default include, unaffected by the *IT.java
+// exclude) but its single @Test method is gated by @EnabledIfEnvironmentVariable below, so it
+// never actually executes — and never makes a real Anthropic call — unless LLM_API_KEY is set.
+// The name deliberately does NOT match Failsafe's *IT.java / IT*.java / *ITCase.java includes,
+// so renaming it to *IT.java would additionally wire it into CI's integration-test phase, where
+// LLM_API_KEY is never set anyway, but would be a needless duplicate execution path. Keep it as
+// LlmProviderIntegrationTest.
 @Tag("integration")
 class LlmProviderIntegrationTest {
 
