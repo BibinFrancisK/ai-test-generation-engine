@@ -7,10 +7,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.RestClient;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -44,6 +41,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Tag("integration")
 @ActiveProfiles("test")
+@Import(MockGitHubRestClientConfig.class)
 class GitHubWebhookHandlerIT {
 
     private static final String WEBHOOK_SECRET = "test-webhook-secret-not-a-real-secret";
@@ -123,27 +121,5 @@ class GitHubWebhookHandlerIT {
     private TestGenerationResponse dummyResponse() {
         return new TestGenerationResponse(
                 "run-it-1", "class FooTest {}", "SUCCESS", List.of(), "s3://bucket/key", null, Instant.now());
-    }
-
-    // GitHubConfig's real gitHubRestClient bean makes real HTTP calls; this test-only config
-    // replaces it with one bound to a MockRestServiceServer so fetchDiff() never leaves the JVM.
-    @TestConfiguration
-    static class MockGitHubRestClientConfig {
-
-        @Bean
-        RestClient.Builder gitHubRestClientBuilder() {
-            return RestClient.builder();
-        }
-
-        @Bean
-        MockRestServiceServer mockGitHubServer(RestClient.Builder gitHubRestClientBuilder) {
-            return MockRestServiceServer.bindTo(gitHubRestClientBuilder).build();
-        }
-
-        @Bean
-        @Primary
-        RestClient mockedGitHubRestClient(RestClient.Builder gitHubRestClientBuilder, MockRestServiceServer mockGitHubServer) {
-            return gitHubRestClientBuilder.build();
-        }
     }
 }
