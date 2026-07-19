@@ -86,4 +86,8 @@ public final class Constants {
     // GitHubPrCreator — retry backoff for 5xx responses
     public static final Duration GITHUB_RETRY_BACKOFF = Duration.ofMillis(500);
 
+    // TestBranchName / GitHubWebhookHandler — prefix identifying engine-generated PRs, so the
+    // webhook handler can ignore them and avoid recursively generating tests for its own output
+    public static final String TESTGEN_BRANCH_PREFIX = "testgen/";
+
 }
