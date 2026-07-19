@@ -78,6 +78,19 @@ class GitHubWebhookHandlerTest {
     }
 
     @Test
+    void ignoresPullRequestsOpenedOnEngineGeneratedTestgenBranches() {
+        byte[] body = samplePayloadForBranch("opened", "testgen/feature/x-a1b2c3d4");
+
+        GitHubWebhookHandler handler = new GitHubWebhookHandler(
+                signatureValidator, objectMapper, gitHubAppAuthenticator, RestClient.builder().build(), orchestrator);
+
+        handler.handle(body, "sig", "pull_request", "delivery-5");
+
+        verifyNoInteractions(orchestrator);
+        verifyNoInteractions(gitHubAppAuthenticator);
+    }
+
+    @Test
     void dispatchesGenerationWithFieldsExtractedFromPayload() {
         byte[] body = samplePayload("opened");
 
@@ -105,6 +118,10 @@ class GitHubWebhookHandlerTest {
     }
 
     private byte[] samplePayload(String action) {
+        return samplePayloadForBranch(action, "feature/x");
+    }
+
+    private byte[] samplePayloadForBranch(String action, String headRef) {
         String json = """
                 {
                   "action": "%s",
@@ -115,11 +132,11 @@ class GitHubWebhookHandlerTest {
                   },
                   "pull_request": {
                     "number": 42,
-                    "head": { "ref": "feature/x", "sha": "abc123" },
+                    "head": { "ref": "%s", "sha": "abc123" },
                     "diff_url": "%s"
                   }
                 }
-                """.formatted(action, DIFF_URL);
+                """.formatted(action, headRef, DIFF_URL);
         return json.getBytes(StandardCharsets.UTF_8);
     }
 }

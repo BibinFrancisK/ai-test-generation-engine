@@ -16,6 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.util.Set;
 
+import static com.testgen.util.Constants.TESTGEN_BRANCH_PREFIX;
+
 @Component
 public class GitHubWebhookHandler {
 
@@ -54,6 +56,11 @@ public class GitHubWebhookHandler {
 
             if (!HANDLED_ACTIONS.contains(payload.action())) {
                 log.info("Ignoring pull_request action={}", payload.action());
+                return;
+            }
+
+            if (payload.pullRequest().head().ref().startsWith(TESTGEN_BRANCH_PREFIX)) {
+                log.info("Ignoring pull_request for engine-generated branch={}", payload.pullRequest().head().ref());
                 return;
             }
 

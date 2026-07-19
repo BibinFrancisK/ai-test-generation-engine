@@ -4,7 +4,7 @@
 
 > Analyzes GitHub PR diffs, generates JUnit 5 tests via Anthropic Claude, validates them in-process, and opens a pull request with the results — automatically.
 
-**Status:** Week 1 complete (v0.1) — diff analysis → LLM test generation; validation + GitHub integration coming in Week 2
+**Status:** Week 2 complete (v0.2) — full loop working end-to-end: PR opened → diff analysis → LLM test generation → in-process validation → `testgen/` branch + PR opened against the source branch → notification comment. See [`docs/demo-e2e-run.md`](docs/demo-e2e-run.md) for a real run.
 
 ---
 
@@ -53,15 +53,17 @@ See [`docs/architecture.md`](docs/architecture.md) for the full component breakd
 
 ---
 
-## How It Works (Week 1 — Current State)
+## How It Works (Week 2 — Current State)
 
-The following pipeline is fully implemented and tested. GitHub integration, validation, and persistence land in Week 2.
+The full pipeline below is implemented, tested, and verified end-to-end against a real GitHub repository (see [`docs/demo-e2e-run.md`](docs/demo-e2e-run.md)).
 
-1. **Parse** — `DiffParser` turns a GitHub unified diff string into `FileDiff` records, extracting file paths and hunk line ranges for `.java` files only
-2. **Analyze** — `DiffAnalyzer` uses `SourceAnalyzer` (JavaParser AST) to correlate changed hunk line ranges to method signatures, producing a `List<ChangedMethod>`
-3. **Assemble prompt** — `TestGenerationPromptBuilder` builds a system prompt ("expert Java test engineer, return only valid Java") and a user prompt containing the class name, changed method signatures, return types, and annotations
+1. **Receive** — `GitHubWebhookHandler` validates the HMAC-SHA256 signature before deserializing the payload, then ignores anything that isn't a `pull_request` `opened`/`synchronize` event — including events on its own `testgen/` branches, so the engine never recursively generates tests for its own output
+2. **Parse & analyze** — `DiffParser` turns the GitHub unified diff into `FileDiff` records; `DiffAnalyzer` uses `SourceAnalyzer` (JavaParser AST) to correlate changed hunk line ranges to method signatures, producing a `List<ChangedMethod>`
+3. **Assemble context** — `ContextAssembler` combines Tier 1 (full source, existing test file, up to 3 dependency sources — always fresh from the GitHub Contents API) with Tier 2 (per-repo `ProjectConventions`, cached in DynamoDB and refreshed if stale) into a `GenerationContext`
 4. **Generate** — `TestGenerationService` calls the active `LlmProvider` (Anthropic Claude in production; `NoopProvider` in all tests), strips markdown code fences from the response, and extracts the class name via a lookahead regex
-5. **Write** — The generated JUnit 5 source is written to `tmp/generated-tests/{ClassName}.java` and returned as an immutable `GeneratedTest` record (`className`, `packageName`, `testCode`, `savedPath`, `generatedAt`)
+5. **Validate** — `TestValidator` compiles the generated test alongside the class-under-test's source using the Java Compiler API, then executes it in-process via the JUnit Platform Launcher, returning a sealed `ValidationResult`
+6. **Persist** — the generated test is uploaded to S3 (`S3TestArtifactStore`) and the run recorded in DynamoDB (`DynamoDbTestRepository`)
+7. **Deliver** — on successful validation, `GitHubPrCreator` creates a `testgen/{source-branch}-{id}` branch, commits the test file, opens a PR against the source branch, and posts a link comment on the original PR — typically within 20 seconds of the source PR being opened
 
 The active LLM provider is selected at startup via `testgen.llm.provider` in `application.yml` — switching between Anthropic and OpenAI requires only a config change, not a code change (sealed `LlmProvider` interface, ADR-002).
 
