@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.service.SampleServiceTest" tests="3" failures="2" errors="0" time="0.045">
+  <testcase classname="com.example.service.SampleServiceTest" name="getStatusReturnsOk" time="0.012"/>
+  <testcase classname="com.example.service.SampleServiceTest" name="processOrderReturnsFormattedString" time="0.018">
+    <failure message="expected: &lt;ord-001:5&gt; but was: &lt;ord-001-5&gt;" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: expected: &lt;ord-001:5&gt; but was: &lt;ord-001-5&gt;
+	at com.example.service.SampleServiceTest.processOrderReturnsFormattedString(SampleServiceTest.java:40)
+</failure>
+  </testcase>
+  <testcase classname="com.example.service.SampleServiceTest" name="saveOrderDelegatesToRepository" time="0.015">
+    <failure message="Wanted but not invoked: orderRepository.save(order);" type="org.mockito.exceptions.verification.WantedButNotInvoked">org.mockito.exceptions.verification.WantedButNotInvoked: Wanted but not invoked: orderRepository.save(order);
+	at com.example.service.SampleServiceTest.saveOrderDelegatesToRepository(SampleServiceTest.java:48)
+</failure>
+  </testcase>
+</testsuite>

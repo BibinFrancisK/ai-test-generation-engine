@@ -90,4 +90,6 @@ public final class Constants {
     // webhook handler can ignore them and avoid recursively generating tests for its own output
     public static final String TESTGEN_BRANCH_PREFIX = "testgen/";
 
+    public static final List<String> FAILURE_TAGS = List.of("failure", "error");
+
 }
