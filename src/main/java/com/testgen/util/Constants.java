@@ -6,7 +6,8 @@ import java.util.regex.Pattern;
 
 public final class Constants {
 
-    private Constants() {}
+    private Constants() {
+    }
 
     // SourceAnalyzer
     public static final String UNKNOWN_CLASS = "Unknown";
@@ -48,6 +49,11 @@ public final class Constants {
             You are an expert Java test engineer. Use %s and %s.
             Return only valid Java source code — no markdown code fences, no explanations.""";
 
+    // HealingPromptBuilder — prompt template and section headers
+    public static final String HEALING_SYSTEM_PROMPT = """
+            You are an expert Java test engineer. A test has broken due to a code change.
+            Return only the corrected test class, no markdown, no explanations.""";
+
     public static final String EXISTING_TEST_FILE_HEADER = "## Existing test file — follow this style exactly";
     public static final String FULL_SOURCE_HEADER = "## Full source of the changed class";
     public static final String DEPENDENCY_SOURCES_HEADER = "## Dependency sources";
@@ -86,10 +92,20 @@ public final class Constants {
     // GitHubPrCreator — retry backoff for 5xx responses
     public static final Duration GITHUB_RETRY_BACKOFF = Duration.ofMillis(500);
 
-    // TestBranchName / GitHubWebhookHandler — prefix identifying engine-generated PRs, so the
-    // webhook handler can ignore them and avoid recursively generating tests for its own output
     public static final String TESTGEN_BRANCH_PREFIX = "testgen/";
 
     public static final List<String> FAILURE_TAGS = List.of("failure", "error");
+
+    public static final String HEALING_FAILING_TEST_HEADER = "## Failing test";
+    public static final String HEALING_CURRENT_SOURCE_HEADER = "## Current source of the class under test";
+    public static final String HEALING_ERROR_MESSAGE_HEADER = "## Error message";
+    public static final String HEALING_STACK_TRACE_HEADER = "## Stack trace";
+    public static final String HEALING_PREVIOUS_ERRORS_HEADER = "## Previous attempt's validation errors";
+    public static final int HEALING_PROMPT_TOKEN_BUDGET = 1000;
+
+    // HealingOrchestrator — HealedTestSummary.status values
+    public static final String HEALING_STATUS_HEALED = "HEALED";
+    public static final String HEALING_STATUS_FAILED = "FAILED";
+    public static final String HEALING_STATUS_SKIPPED = "SKIPPED";
 
 }
