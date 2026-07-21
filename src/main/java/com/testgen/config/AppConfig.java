@@ -6,6 +6,9 @@ import com.testgen.generation.NoopProvider;
 import com.testgen.generation.OpenAiLlmProvider;
 import com.testgen.generation.TestGenerationPromptBuilder;
 import com.testgen.generation.TestGenerationService;
+import com.testgen.healing.HealingPromptBuilder;
+import com.testgen.healing.TestHealer;
+import com.testgen.validation.TestValidator;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,5 +41,15 @@ public class AppConfig {
     @Bean
     TestGenerationService testGenerationService(LlmProvider llmProvider, TestGenerationPromptBuilder promptBuilder) {
         return new TestGenerationService(llmProvider, promptBuilder);
+    }
+
+    @Bean
+    HealingPromptBuilder healingPromptBuilder() {
+        return new HealingPromptBuilder();
+    }
+
+    @Bean
+    TestHealer testHealer(LlmProvider llmProvider, HealingPromptBuilder healingPromptBuilder, TestValidator testValidator) {
+        return new TestHealer(llmProvider, healingPromptBuilder, testValidator);
     }
 }
