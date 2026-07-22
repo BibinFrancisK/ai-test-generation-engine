@@ -23,6 +23,7 @@
         <javaparser.version>3.28.2</javaparser.version>
         <langchain4j.version>1.17.2</langchain4j.version>
         <aws.sdk.version>2.26.31</aws.sdk.version>
+        <playwright.version>1.61.0</playwright.version>
         <skipITs>false</skipITs>
     </properties>
 
@@ -123,6 +124,14 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
+
+        <!-- Playwright — API e2e test for the dashboard endpoint (no browser needed for a JSON API) -->
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>${playwright.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -137,9 +146,12 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.6</version>
                 <configuration>
-                    <!-- Exclude integration tests from the default test phase -->
+                    <!-- Exclude integration and e2e tests from the default test phase.
+                         E2e tests (*E2eTest.java) need Docker (Testcontainers) like *IT.java does,
+                         but are run explicitly via -Dtest=<ClassName>, which overrides these excludes. -->
                     <excludes>
                         <exclude>**/*IT.java</exclude>
+                        <exclude>**/*E2eTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

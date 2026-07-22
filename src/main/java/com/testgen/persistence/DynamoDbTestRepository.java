@@ -48,6 +48,20 @@ public class DynamoDbTestRepository {
                 .toList();
     }
 
+    public List<TestRun> findByRepositoryId(String repositoryId) {
+        ScanEnhancedRequest request = ScanEnhancedRequest.builder()
+                .filterExpression(Expression.builder()
+                        .expression("#rid = :rid")
+                        .expressionNames(Map.of("#rid", "repositoryId"))
+                        .expressionValues(Map.of(
+                                ":rid", AttributeValue.builder().s(repositoryId).build()))
+                        .build())
+                .build();
+        return table.scan(request).items().stream()
+                .map(DynamoDbTestRepository::toTestRun)
+                .toList();
+    }
+
     private static TestRunEntity toEntity(TestRun r) {
         TestRunEntity e = new TestRunEntity();
         e.setTestRunId(r.testRunId());

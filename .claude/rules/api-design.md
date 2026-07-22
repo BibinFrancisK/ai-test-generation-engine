@@ -12,6 +12,7 @@
 | `api/` | Spring `@RestController` classes only — `TestGenerationController`, `WebhookController`, `DashboardController` |
 | `config/` | Spring `@Configuration` and `@Bean` definitions — no business logic |
 | `context/` | Two-tier context assembly — `ContextAssembler` |
+| `dashboard/` | Dashboard aggregation — `CoverageAggregator` reads `TestRun` data via `persistence/` and computes `CoverageStats` |
 | `generation/` | LLM abstraction and prompt building — `LlmProvider` (sealed), `AnthropicLlmProvider`, `OpenAiLlmProvider`, `TestGenerationService`, `TestGenerationPromptBuilder` |
 | `github/` | All GitHub API calls — `WebhookSignatureValidator`, `GitHubWebhookHandler`, `GitHubContentsFetcher`, `GitHubAppAuthenticator`, `GitHubPrCreator` |
 | `healing/` | Self-healing pipeline — `JUnitXmlReportParser`, `ChangeCorrelator`, `HealingTrigger`, `TestHealer`, `HealingOrchestrator` |
