@@ -114,6 +114,10 @@ cp .env.example .env        # then set LLM_API_KEY=sk-ant-...
 
 # 4. Start the app (Week 2: requires LocalStack for DynamoDB/S3)
 ./mvnw spring-boot:run
+
+# 5. One-time Playwright browser install (only needed if you extend DashboardE2eTest
+#    beyond APIRequestContext to drive an actual browser)
+mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install"
 ```
 
 > **Note:** Docker Compose and LocalStack are added in Week 2 (Day 9). Until then, `./mvnw verify` is the primary dev loop.

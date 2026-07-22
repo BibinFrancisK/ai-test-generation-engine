@@ -11,6 +11,8 @@ import com.testgen.model.ChangedMethod;
 import com.testgen.model.FileDiff;
 import com.testgen.model.HealingResult;
 import com.testgen.model.TestFailure;
+import com.testgen.model.TestRun;
+import com.testgen.persistence.DynamoDbTestRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -20,10 +22,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.testgen.util.Constants.HEALING_STATUS_FAILED;
 import static com.testgen.util.Constants.HEALING_STATUS_HEALED;
 import static com.testgen.util.Constants.HEALING_STATUS_SKIPPED;
+import static com.testgen.util.Constants.SCHEMA_VERSION_V1;
+import static com.testgen.util.Constants.STATUS_HEALING_FAILED;
+import static com.testgen.util.Constants.STATUS_HEALING_SUCCESS;
 
 @Component
 public class HealingOrchestrator {
@@ -37,6 +43,7 @@ public class HealingOrchestrator {
     private final HealingTrigger healingTrigger;
     private final TestHealer testHealer;
     private final GitHubPrCreator gitHubPrCreator;
+    private final DynamoDbTestRepository testRepository;
 
     public HealingOrchestrator(JUnitXmlReportParser xmlReportParser,
                                DiffParser diffParser,
@@ -44,7 +51,8 @@ public class HealingOrchestrator {
                                ChangeCorrelator changeCorrelator,
                                HealingTrigger healingTrigger,
                                TestHealer testHealer,
-                               GitHubPrCreator gitHubPrCreator) {
+                               GitHubPrCreator gitHubPrCreator,
+                               DynamoDbTestRepository testRepository) {
         this.xmlReportParser = xmlReportParser;
         this.diffParser = diffParser;
         this.diffAnalyzer = diffAnalyzer;
@@ -52,6 +60,7 @@ public class HealingOrchestrator {
         this.healingTrigger = healingTrigger;
         this.testHealer = testHealer;
         this.gitHubPrCreator = gitHubPrCreator;
+        this.testRepository = testRepository;
     }
 
     public HealingResponse orchestrate(HealingRequest request) {
@@ -92,8 +101,10 @@ public class HealingOrchestrator {
 
         return switch (result) {
             case HealingResult.HealingSuccess success -> deliver(request, testClassName, success);
-            case HealingResult.HealingFailure failureResult ->
-                    new HealedTestSummary(testClassName, HEALING_STATUS_FAILED, null, failureResult.validationErrors());
+            case HealingResult.HealingFailure failureResult -> {
+                persistHealingRun(request, STATUS_HEALING_FAILED, null, null);
+                yield new HealedTestSummary(testClassName, HEALING_STATUS_FAILED, null, failureResult.validationErrors());
+            }
         };
     }
 
@@ -102,12 +113,27 @@ public class HealingOrchestrator {
             String testPrUrl = gitHubPrCreator.deliverHealedTest(new HealingDeliveryRequest(
                     request.owner(), request.repo(), request.sourceBranch(), request.sourceBranchSha(),
                     request.prNumber(), success.fixedTest(), testClassName));
+            persistHealingRun(request, STATUS_HEALING_SUCCESS, success.fixedTest().testCode(), testPrUrl);
             return new HealedTestSummary(testClassName, HEALING_STATUS_HEALED, testPrUrl, List.of());
         } catch (Exception e) {
             log.error("Healed test {} passed validation but PR delivery to GitHub failed", testClassName, e);
+            persistHealingRun(request, STATUS_HEALING_FAILED, null, null);
             return new HealedTestSummary(testClassName, HEALING_STATUS_FAILED, null,
                     List.of("Healed but PR delivery failed: " + e.getMessage()));
         }
+    }
+
+    private void persistHealingRun(HealingRequest request, String validationStatus, String generatedTestCode, String testPrUrl) {
+        testRepository.save(new TestRun(
+                UUID.randomUUID().toString(),
+                request.owner() + "/" + request.repo(),
+                String.valueOf(request.prNumber()),
+                generatedTestCode,
+                validationStatus,
+                Instant.now().toString(),
+                null,
+                testPrUrl,
+                SCHEMA_VERSION_V1));
     }
 
     private Map<String, String> sourceByPath(List<FileDiff> fileDiffs, Map<String, String> sourceFiles) {

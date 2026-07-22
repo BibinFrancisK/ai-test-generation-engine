@@ -82,6 +82,10 @@ public final class Constants {
     public static final String STATUS_EXECUTION_FAILED = "EXECUTION_FAILED";
     public static final String STATUS_FAILED = "FAILED";
 
+    // HealingOrchestrator — TestRun.validationStatus values for persisted healing attempts
+    public static final String STATUS_HEALING_SUCCESS = "HEALING_SUCCESS";
+    public static final String STATUS_HEALING_FAILED = "HEALING_FAILED";
+
     // GitHubAppAuthenticator — JWT signing and installation token cache
     public static final String JWT_SIGNATURE_ALGORITHM = "SHA256withRSA";
     public static final String JWT_HEADER_JSON = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";

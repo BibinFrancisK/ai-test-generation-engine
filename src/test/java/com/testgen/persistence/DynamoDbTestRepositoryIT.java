@@ -133,4 +133,37 @@ class DynamoDbTestRepositoryIT {
 
         assertThat(results).isEmpty();
     }
+
+    @Test
+    void findByRepositoryIdReturnsRunsAcrossDifferentPullRequests() {
+        TestRun runOnPrOne = new TestRun(
+                "run-101",
+                "repo-xyz",
+                "pr-1",
+                "class OneTest {}",
+                "SUCCESS",
+                Instant.now().truncatedTo(ChronoUnit.SECONDS).toString(),
+                null,
+                null,
+                "v1"
+        );
+        TestRun runOnPrTwo = new TestRun(
+                "run-102",
+                "repo-xyz",
+                "pr-2",
+                "class TwoTest {}",
+                "COMPILE_FAILED",
+                Instant.now().truncatedTo(ChronoUnit.SECONDS).toString(),
+                null,
+                null,
+                "v1"
+        );
+
+        repository.save(runOnPrOne);
+        repository.save(runOnPrTwo);
+        List<TestRun> results = repository.findByRepositoryId("repo-xyz");
+
+        assertThat(results).hasSize(2);
+        assertThat(results).extracting(TestRun::testRunId).containsExactlyInAnyOrder("run-101", "run-102");
+    }
 }
