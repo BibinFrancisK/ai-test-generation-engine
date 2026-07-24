@@ -1,11 +1,7 @@
 resource "aws_s3_bucket" "artifacts" {
   bucket = "test-generation-artifacts-${var.environment}"
 
-  tags = {
-    Environment = var.environment
-    Project     = var.project
-    ManagedBy   = "terraform"
-  }
+  tags = local.common_tags
 }
 
 resource "aws_s3_bucket_versioning" "artifacts" {

@@ -14,11 +14,7 @@ resource "aws_dynamodb_table" "test_runs" {
     type = "S"
   }
 
-  tags = {
-    Environment = var.environment
-    Project     = var.project
-    ManagedBy   = "terraform"
-  }
+  tags = local.common_tags
 }
 
 resource "aws_dynamodb_table" "project_conventions" {
@@ -31,9 +27,5 @@ resource "aws_dynamodb_table" "project_conventions" {
     type = "S"
   }
 
-  tags = {
-    Environment = var.environment
-    Project     = var.project
-    ManagedBy   = "terraform"
-  }
+  tags = local.common_tags
 }

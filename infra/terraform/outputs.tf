@@ -22,3 +22,23 @@ output "ecs_task_role_arn" {
   description = "IAM role ARN used by the application at runtime for S3/DynamoDB/SSM access"
   value       = aws_iam_role.testgen_ecs_task_role.arn
 }
+
+output "alb_dns_name" {
+  description = "Public DNS name of the ALB fronting the ECS service"
+  value       = aws_lb.testgen.dns_name
+}
+
+output "ecr_repository_url" {
+  description = "ECR repository URL to push the application image to"
+  value       = aws_ecr_repository.app.repository_url
+}
+
+output "ecs_cluster_name" {
+  description = "ECS cluster name"
+  value       = aws_ecs_cluster.testgen.name
+}
+
+output "ecs_service_name" {
+  description = "ECS service name"
+  value       = aws_ecs_service.testgen.name
+}

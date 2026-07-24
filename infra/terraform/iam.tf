@@ -16,11 +16,7 @@ resource "aws_iam_role" "testgen_ecs_execution_role" {
   name               = "testgen-ecs-execution-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
 
-  tags = {
-    Environment = var.environment
-    Project     = var.project
-    ManagedBy   = "terraform"
-  }
+  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "testgen_ecs_execution_role_managed" {
@@ -32,11 +28,7 @@ resource "aws_iam_role" "testgen_ecs_task_role" {
   name               = "testgen-ecs-task-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
 
-  tags = {
-    Environment = var.environment
-    Project     = var.project
-    ManagedBy   = "terraform"
-  }
+  tags = local.common_tags
 }
 
 data "aws_iam_policy_document" "testgen_task_policy" {

@@ -20,3 +20,13 @@ terraform {
 provider "aws" {
   region = var.region
 }
+
+locals {
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project
+    ManagedBy   = "terraform"
+  }
+
+  container_name = "${var.project}-image"
+}
