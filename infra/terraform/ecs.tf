@@ -43,8 +43,13 @@ resource "aws_ecs_task_definition" "testgen" {
       environment = [
         { name = "AWS_REGION", value = var.region },
         { name = "AWS_S3_BUCKET", value = aws_s3_bucket.artifacts.bucket },
-        # TODO(Day 20): remove once /testgen/llm-api-key is wired via SSM and the real provider can start
-        { name = "TESTGEN_LLM_PROVIDER", value = "noop" },
+      ]
+
+      secrets = [
+        { name = "LLM_API_KEY", valueFrom = "${local.ssm_parameter_arn_prefix}/llm-api-key" },
+        { name = "GITHUB_APP_PRIVATE_KEY", valueFrom = "${local.ssm_parameter_arn_prefix}/github-app-private-key" },
+        { name = "GITHUB_WEBHOOK_SECRET", valueFrom = "${local.ssm_parameter_arn_prefix}/github-webhook-secret" },
+        { name = "GITHUB_APP_ID", valueFrom = "${local.ssm_parameter_arn_prefix}/github-app-id" },
       ]
 
       logConfiguration = {

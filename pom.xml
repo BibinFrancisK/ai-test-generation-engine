@@ -23,6 +23,7 @@
         <javaparser.version>3.28.2</javaparser.version>
         <langchain4j.version>1.17.2</langchain4j.version>
         <aws.sdk.version>2.26.31</aws.sdk.version>
+        <spring-cloud-aws.version>3.4.2</spring-cloud-aws.version>
         <playwright.version>1.61.0</playwright.version>
         <skipITs>false</skipITs>
     </properties>
@@ -40,6 +41,13 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
                 <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.awspring.cloud</groupId>
+                <artifactId>spring-cloud-aws-dependencies</artifactId>
+                <version>${spring-cloud-aws.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -112,6 +120,12 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud AWS — SSM Parameter Store, for local/AWS parity with the ECS-native `secrets` injection -->
+        <dependency>
+            <groupId>io.awspring.cloud</groupId>
+            <artifactId>spring-cloud-aws-starter-parameter-store</artifactId>
         </dependency>
 
         <!-- JUnit Platform Launcher in compile scope — TestExecutor is production code
