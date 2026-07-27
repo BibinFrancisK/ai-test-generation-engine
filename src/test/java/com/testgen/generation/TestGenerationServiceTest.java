@@ -55,7 +55,8 @@ class TestGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TestGenerationService(llmProvider, promptBuilder);
+        LlmSpendGuard llmSpendGuard = new LlmSpendGuard(llmProvider, 50_000);
+        service = new TestGenerationService(llmSpendGuard, promptBuilder);
     }
 
     @AfterEach

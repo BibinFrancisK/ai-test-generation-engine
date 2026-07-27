@@ -21,6 +21,12 @@ provider "aws" {
   region = var.region
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_kms_alias" "ssm" {
+  name = "alias/aws/ssm"
+}
+
 locals {
   common_tags = {
     Environment = var.environment
@@ -29,4 +35,6 @@ locals {
   }
 
   container_name = "${var.project}-image"
+
+  ssm_parameter_arn_prefix = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/testgen"
 }

@@ -1,6 +1,7 @@
 package com.testgen;
 
 import com.testgen.analysis.SourceAnalyzer;
+import com.testgen.generation.LlmSpendGuard;
 import com.testgen.generation.NoopProvider;
 import com.testgen.generation.TestGenerationPromptBuilder;
 import com.testgen.generation.TestGenerationService;
@@ -79,7 +80,8 @@ class TestGenerationPipelineIT {
         GenerationContext context = new GenerationContext(
                 source, Optional.empty(), List.of(), conventions, changedMethods);
 
-        TestGenerationService service = new TestGenerationService(llmProvider, promptBuilder);
+        LlmSpendGuard llmSpendGuard = new LlmSpendGuard(llmProvider, 50_000);
+        TestGenerationService service = new TestGenerationService(llmSpendGuard, promptBuilder);
         GeneratedTest result = service.generate(context);
         writtenFile = result.savedPath();
 

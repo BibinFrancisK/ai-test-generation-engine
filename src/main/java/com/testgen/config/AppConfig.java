@@ -2,6 +2,7 @@ package com.testgen.config;
 
 import com.testgen.generation.AnthropicLlmProvider;
 import com.testgen.generation.LlmProvider;
+import com.testgen.generation.LlmSpendGuard;
 import com.testgen.generation.NoopProvider;
 import com.testgen.generation.OpenAiLlmProvider;
 import com.testgen.generation.TestGenerationPromptBuilder;
@@ -34,13 +35,18 @@ public class AppConfig {
     }
 
     @Bean
+    LlmSpendGuard llmSpendGuard(LlmProvider llmProvider, LlmConfig config) {
+        return new LlmSpendGuard(llmProvider, config.maxTokensPerHour());
+    }
+
+    @Bean
     TestGenerationPromptBuilder testGenerationPromptBuilder() {
         return new TestGenerationPromptBuilder();
     }
 
     @Bean
-    TestGenerationService testGenerationService(LlmProvider llmProvider, TestGenerationPromptBuilder promptBuilder) {
-        return new TestGenerationService(llmProvider, promptBuilder);
+    TestGenerationService testGenerationService(LlmSpendGuard llmSpendGuard, TestGenerationPromptBuilder promptBuilder) {
+        return new TestGenerationService(llmSpendGuard, promptBuilder);
     }
 
     @Bean

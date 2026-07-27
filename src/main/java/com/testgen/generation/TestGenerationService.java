@@ -27,11 +27,11 @@ public class TestGenerationService {
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("package\\s+([\\w.]+)\\s*;");
     private static final Path OUTPUT_DIR = Path.of("tmp", "generated-tests");
 
-    private final LlmProvider llmProvider;
+    private final LlmSpendGuard llmSpendGuard;
     private final TestGenerationPromptBuilder promptBuilder;
 
-    public TestGenerationService(LlmProvider llmProvider, TestGenerationPromptBuilder promptBuilder) {
-        this.llmProvider = llmProvider;
+    public TestGenerationService(LlmSpendGuard llmSpendGuard, TestGenerationPromptBuilder promptBuilder) {
+        this.llmSpendGuard = llmSpendGuard;
         this.promptBuilder = promptBuilder;
     }
 
@@ -39,7 +39,7 @@ public class TestGenerationService {
         String systemPrompt = promptBuilder.buildSystemPrompt(context.conventions());
         String userPrompt = promptBuilder.buildUserPrompt(context);
 
-        String rawResponse = llmProvider.generate(systemPrompt, userPrompt);
+        String rawResponse = llmSpendGuard.generate(systemPrompt, userPrompt);
         String testCode = rawResponse.replaceAll("```java|```", "").trim();
 
         String className = extractClassName(testCode);
