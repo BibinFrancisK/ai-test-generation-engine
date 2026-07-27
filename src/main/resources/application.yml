@@ -4,6 +4,15 @@ spring:
   threads:
     virtual:
       enabled: true
+  cloud:
+    aws:
+      region:
+        # Spring Cloud AWS's SsmClient bean is auto-configured unconditionally whenever the
+        # starter is on the classpath, independent of the config-import below — without an
+        # explicit region it falls back to the SDK's default provider chain, which only
+        # succeeds where AWS CLI config/env vars happen to be present (e.g. a dev machine),
+        # and fails hard in a clean environment like CI.
+        static: ${AWS_REGION:us-east-1}
 
 management:
   endpoints:
