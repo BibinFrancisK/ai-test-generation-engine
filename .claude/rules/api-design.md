@@ -19,6 +19,7 @@
 | `model/` | Immutable records and sealed interfaces — no business logic |
 | `orchestration/` | Pipeline wiring — `TestGenerationOrchestrator` |
 | `persistence/` | AWS SDK calls — `DynamoDbTestRepository`, `ProjectConventionsRepository`, `S3TestArtifactStore` |
+| `util/` | Shared constants only — `Constants` — no business logic |
 | `validation/` | In-process compilation and execution — `TestCompiler`, `TestExecutor` |
 
 - No circular dependencies. `model/` must not import from any other package. `analysis/`, `generation/`, `validation/`, and `github/` must not import from each other.

@@ -47,6 +47,7 @@ public final class Constants {
     // TestGenerationPromptBuilder — prompt templates
     public static final String SYSTEM_PROMPT_TEMPLATE = """
             You are an expert Java test engineer. Use %s and %s.
+            Test only the class's public API — never call private or package-private members directly.
             Return only valid Java source code — no markdown code fences, no explanations.""";
 
     // HealingPromptBuilder — prompt template and section headers
