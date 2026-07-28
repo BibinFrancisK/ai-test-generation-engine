@@ -71,6 +71,12 @@ public class PasswordPolicyValidator {
         return password.chars().anyMatch(Character::isDigit);
     }
 
+    /**
+     * A "special character" is any character that is neither a letter nor a digit nor
+     * whitespace — punctuation and symbols such as {@code !@#$%}. This check is Unicode-aware
+     * via {@link Character#isLetterOrDigit(char)}, so accented and non-Latin letters (e.g. "é",
+     * "ñ", "Ω") count as ordinary letters, not as special characters.
+     */
     private boolean containsSpecialCharacter(String password) {
         return password.chars().anyMatch(c -> !Character.isLetterOrDigit(c) && !Character.isWhitespace(c));
     }
