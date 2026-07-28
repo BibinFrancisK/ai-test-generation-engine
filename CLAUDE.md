@@ -14,20 +14,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Single test class
 ./mvnw -Dtest=DiffParserTest test
 
-# Start the app locally (requires LocalStack running)
-./mvnw spring-boot:run
-
 # Start LocalStack (DynamoDB + S3 emulation)
 docker compose up -d
 
+# Start the app locally (requires LocalStack running)
+./mvnw spring-boot:run
+
 # Full local environment including the app
 docker compose --profile full up -d
-
-# Provision local infra via Terraform against LocalStack
-cd infra/terraform && terraform apply
 ```
 
-> `docker-compose.yml` is added on Day 9 (LocalStack setup). The `docker compose` and `terraform` commands above will not work until then.
+> **`infra/terraform/` targets real AWS, not LocalStack.** It was repointed during the ECS Fargate deploy work to provision the actual production infrastructure (ECS/ALB/ECR/DynamoDB/S3/IAM) and now has a real S3 remote-state backend — running `terraform apply` from a dev machine provisions real, billable AWS resources, not LocalStack ones. For local dev, LocalStack's DynamoDB tables and S3 bucket are created directly via the AWS CLI against `http://localhost:4566` (dummy credentials — LocalStack ignores them), matching the schemas in `infra/terraform/dynamodb.tf` and `s3.tf`. For an actual AWS deploy: `cd infra/terraform && terraform apply`, then `terraform destroy -auto-approve` immediately after — see `docs/cost-estimate.md`.
 
 ## Architecture
 
@@ -75,8 +72,9 @@ Full coverage targets, fixture file list, and what NOT to test: `.claude/rules/t
 - **Compute:** ECS Fargate + ALB (ADR-001). Two IAM roles: task execution role (ECR + CloudWatch only) and task role (scoped S3/DynamoDB/SSM paths only).
 - **Storage:** DynamoDB Enhanced Client for metadata; S3 for `.java` artifacts (private bucket, presigned URLs ≤1 h TTL). Object key pattern: `test-artifacts/{repositoryId}/{testRunId}/{ClassName}Test.java`.
 - **Local emulation:** LocalStack via Docker Compose and Testcontainers (ADR-004).
-- **IaC stubs:** `infra/terraform/` — 9 `.tf` files, fully implemented on Day 18.
-- **Cost guard:** ALB costs ~$16/month. Run `terraform destroy -auto-approve` immediately after every demo session.
+- **IaC:** `infra/terraform/` — 9 `.tf` files provisioning the full production stack (ECS, ALB, ECR, DynamoDB, S3, IAM); real AWS S3 backend for Terraform state.
+- **CI/CD:** `.github/workflows/ci.yml` runs build + tests on every push/PR; `.github/workflows/deploy.yml` builds the image, pushes to ECR, and forces a new ECS deployment on merge to `main`.
+- **Cost guard:** ALB costs ~$16/month, the one fixed cost that doesn't scale to zero. Run `terraform destroy -auto-approve` immediately after every demo session — see `docs/cost-estimate.md` for the full breakdown.
 
 ## GitHub App Integration
 
@@ -88,7 +86,8 @@ All GitHub API calls use Spring 6 `RestClient` with headers `Accept: application
 
 - Validate HMAC-SHA256 webhook signature **before** deserializing the payload; reject with 401 on mismatch.
 - Never expose `ANTHROPIC_API_KEY`, private key material, or AWS credentials in any log line or API response.
-- `max_tokens=1500` on every LLM call; $10/month hard spend cap set in the Anthropic console.
+- `max_tokens=1500` on every LLM call, enforced twice — `application.yml`'s `testgen.llm.max-tokens` and a hard ceiling (`Constants.HARD_MAX_TOKENS`) that `AnthropicLlmProvider` clamps to regardless of config, so a config-only mistake can't silently exceed it. $10/month hard spend cap set in the Anthropic console.
+- All secrets live in SSM Parameter Store as `SecureString`s under `/testgen/`: `/testgen/llm-api-key`, `/testgen/github-app-private-key`, `/testgen/github-webhook-secret`, `/testgen/github-app-id`. Injected into the ECS task via the native `secrets` block (execution role resolves them at launch) and read at runtime by the app itself via Spring Cloud AWS (task role) — never as plaintext environment variables, never in source.
 - Full security checklist: `.claude/skills/security-review/checklist.md`.
 
 ## Key Rules Reference
@@ -98,5 +97,6 @@ All GitHub API calls use Spring 6 `RestClient` with headers `Accept: application
 | Package structure, records, sealed interfaces, REST/GitHub API conventions, error handling | `.claude/rules/api-design.md` |
 | Test commands, pyramid, coverage targets, Testcontainers, fixture files | `.claude/rules/testing.md` |
 | Security review checklist | `.claude/skills/security-review/checklist.md` |
-| Architecture decisions (ADR-001 through ADR-005) | `docs/adr/` |
+| Architecture decisions (ADR-001 through ADR-007) | `docs/adr/` |
 | Execution plan | `plan/EXECUTION_PLAN.md` (git-ignored; local only) |
+| What I learned, cost breakdown | `docs/what-i-learned.md`, `docs/cost-estimate.md` |
