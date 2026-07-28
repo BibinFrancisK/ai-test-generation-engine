@@ -12,12 +12,11 @@ import java.util.List;
  */
 public class PasswordPolicyValidator {
 
-    private static final int MIN_LENGTH = 8;
-    private static final int MAX_LENGTH = 64;
-
     /**
      * Validates a candidate password against the policy and returns the list of
      * violated rules. An empty list means the password satisfies every rule.
+     * Deliberately has no length-based rule — every check here is categorical
+     * (does the password contain a character of a given class), not a count.
      */
     public List<String> validate(String password) {
         if (password == null) {
@@ -26,12 +25,6 @@ public class PasswordPolicyValidator {
 
         List<String> violations = new ArrayList<>();
 
-        if (password.length() < MIN_LENGTH) {
-            violations.add("must be at least " + MIN_LENGTH + " characters long");
-        }
-        if (password.length() > MAX_LENGTH) {
-            violations.add("must be at most " + MAX_LENGTH + " characters long");
-        }
         if (!containsUppercase(password)) {
             violations.add("must contain at least one uppercase letter");
         }
