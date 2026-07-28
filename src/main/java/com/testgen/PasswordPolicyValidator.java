@@ -59,32 +59,6 @@ public class PasswordPolicyValidator {
         return validate(password).isEmpty();
     }
 
-    /**
-     * Scores password strength on a 0–4 scale by counting how many of the four
-     * character-class rules (uppercase, lowercase, digit, special character) are
-     * satisfied — independent of length, so a short password can still score high.
-     */
-    public int strengthScore(String password) {
-        if (password == null) {
-            throw new IllegalArgumentException("password must not be null");
-        }
-
-        int score = 0;
-        if (containsUppercase(password)) {
-            score++;
-        }
-        if (containsLowercase(password)) {
-            score++;
-        }
-        if (containsDigit(password)) {
-            score++;
-        }
-        if (containsSpecialCharacter(password)) {
-            score++;
-        }
-        return score;
-    }
-
     private boolean containsUppercase(String password) {
         return password.chars().anyMatch(Character::isUpperCase);
     }
